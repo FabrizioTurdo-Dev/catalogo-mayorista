@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Package, ShoppingCart, Settings, LogOut, ExternalLink, Plus, X, Trash2,
-  Check, Truck, AlertCircle, Search, Upload, Image as ImageIcon,
+  Package, ShoppingCart, Settings, ExternalLink, Plus, X, Trash2,
+  Check, Truck, AlertCircle, Upload, Image as ImageIcon, Menu,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { formatPrice, ALL_SIZES_ADULTO, ALL_SIZES_NINO } from "../data/store";
@@ -83,7 +83,7 @@ function Modal({ title, onClose, children, wide }) {
         style={{ maxWidth: wide ? 720 : 480, maxHeight: "90vh" }}
       >
         <div className="overflow-y-auto max-h-[90vh]">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#222] sticky top-0 bg-[#121212] z-10">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[#222] sticky top-0 bg-[#121212] z-10">
             <h2 className="text-base font-extrabold text-[#e8e8e8]">{title}</h2>
             <button
               onClick={onClose}
@@ -92,7 +92,7 @@ function Modal({ title, onClose, children, wide }) {
               <X size={16} />
             </button>
           </div>
-          <div className="p-6">{children}</div>
+          <div className="p-4 sm:p-6">{children}</div>
         </div>
       </motion.div>
     </motion.div>
@@ -182,7 +182,7 @@ function ProductForm({ product, onSave, onCancel }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Input label="Nombre *" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Runner Pro" />
         <Input label="Marca *" value={form.brand} onChange={e => set("brand", e.target.value)} placeholder="Nike" />
         <Input label="Precio *" type="number" value={form.price} onChange={e => set("price", e.target.value)} placeholder="12500" />
@@ -338,7 +338,7 @@ function ProductsSection() {
         </Btn>
       </div>
 
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
           { label: "Total", val: products.length, icon: <Package size={18} />, color: "text-[#d4a853]" },
           { label: "Activos", val: activeCount, icon: <Check size={18} />, color: "text-emerald-400" },
@@ -360,78 +360,108 @@ function ProductsSection() {
             <p className="text-sm">No hay productos aún. ¡Creá el primero!</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-[#0a0a0a]">
-                  {["Producto", "Categoría", "Precio", "Talles / Stock", "Estado", ""].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-[11px] font-bold text-[#888] uppercase tracking-[0.05em] border-b border-[#222]">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((p, i) => (
-                  <tr key={p.id} className="border-b border-[#1a1a1a] last:border-0 hover:bg-[#0a0a0a]/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] flex items-center justify-center text-lg overflow-hidden">
-                          {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : p.emoji}
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-[#e8e8e8]">{p.name}</div>
-                          <div className="text-[11px] text-[#888]">{p.brand}</div>
-                        </div>
+          <>
+            {/* Vista mobile: cards */}
+            <div className="divide-y divide-[#222] sm:hidden">
+              {products.map(p => (
+                <div key={p.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-[#1a1a1a] flex items-center justify-center text-lg overflow-hidden shrink-0">
+                        {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : p.emoji}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-[#888]">{p.cat === "adulto" ? "👟 Adulto" : "🧒 Niño"}</td>
-                    <td className="px-4 py-3 text-sm font-bold text-[#d4a853]">{formatPrice(p.price)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1 flex-wrap max-w-[200px]">
-                        {sizes(p).map(s => (
-                          <span
-                            key={s}
-                            className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-[#e8e8e8] truncate">{p.name}</div>
+                        <div className="text-[11px] text-[#888]">{p.brand} · {p.cat === "adulto" ? "Adulto" : "Niño"}</div>
+                      </div>
+                    </div>
+                    <div className="text-sm font-extrabold text-[#d4a853] shrink-0">{formatPrice(p.price)}</div>
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    {sizes(p).map(s => (
+                      <span key={s} className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                        p.stock[s] === 0
+                          ? "bg-red-500/10 text-red-400"
+                          : "bg-emerald-500/10 text-emerald-400"
+                      }`}>{s}: {p.stock[s]}</span>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <button onClick={() => toggleActive(p)} className={`text-[11px] font-bold px-2.5 py-1 rounded-full cursor-pointer transition-all ${
+                      p.active
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                        : "bg-[#1a1a1a] text-[#555] border border-[#333]"
+                    }`}>{p.active ? "● Activo" : "○ Oculto"}</button>
+                    <div className="flex gap-1.5">
+                      <Btn small variant="ghost" onClick={() => setModal(p)}>Editar</Btn>
+                      <button onClick={() => deleteProduct(p.id)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-all cursor-pointer">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Vista desktop: tabla */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-[#0a0a0a]">
+                    {["Producto", "Categoría", "Precio", "Talles / Stock", "Estado", ""].map(h => (
+                      <th key={h} className="text-left px-4 py-3 text-[11px] font-bold text-[#888] uppercase tracking-[0.05em] border-b border-[#222]">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((p, i) => (
+                    <tr key={p.id} className="border-b border-[#1a1a1a] last:border-0 hover:bg-[#0a0a0a]/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] flex items-center justify-center text-lg overflow-hidden">
+                            {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : p.emoji}
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-[#e8e8e8]">{p.name}</div>
+                            <div className="text-[11px] text-[#888]">{p.brand}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-[#888]">{p.cat === "adulto" ? "👟 Adulto" : "🧒 Niño"}</td>
+                      <td className="px-4 py-3 text-sm font-bold text-[#d4a853]">{formatPrice(p.price)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1 flex-wrap max-w-[200px]">
+                          {sizes(p).map(s => (
+                            <span key={s} className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
                               p.stock[s] === 0
                                 ? "bg-red-500/10 text-red-400"
                                 : "bg-emerald-500/10 text-emerald-400"
-                            }`}
-                          >
-                            {s}: {p.stock[s]}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="text-[10px] text-[#555] mt-0.5">{totalStock(p)} pares</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleActive(p)}
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full cursor-pointer transition-all ${
+                            }`}>{s}: {p.stock[s]}</span>
+                          ))}
+                        </div>
+                        <div className="text-[10px] text-[#555] mt-0.5">{totalStock(p)} pares</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => toggleActive(p)} className={`text-[11px] font-bold px-2.5 py-1 rounded-full cursor-pointer transition-all ${
                           p.active
                             ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
                             : "bg-[#1a1a1a] text-[#555] border border-[#333]"
-                        }`}
-                      >
-                        {p.active ? "● Activo" : "○ Oculto"}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1.5">
-                        <Btn small variant="ghost" onClick={() => setModal(p)}>Editar</Btn>
-                        <button
-                          onClick={() => deleteProduct(p.id)}
-                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        }`}>{p.active ? "● Activo" : "○ Oculto"}</button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1.5">
+                          <Btn small variant="ghost" onClick={() => setModal(p)}>Editar</Btn>
+                          <button onClick={() => deleteProduct(p.id)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-all cursor-pointer">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -574,7 +604,7 @@ function SettingsSection() {
       <div className="flex flex-col gap-4">
         <div className="bg-[#121212] rounded-xl border border-[#222] p-6">
           <h3 className="text-sm font-extrabold text-[#e8e8e8] mb-4">🏪 Datos del negocio</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input label="Nombre" value={cfg.shopName} onChange={e => set("shopName", e.target.value)} />
             <Input label="Teléfono WhatsApp" value={cfg.phone} onChange={e => set("phone", e.target.value)} placeholder="5491155667788" />
             <Input label="Pedido mínimo (pares)" type="number" value={cfg.minOrder} onChange={e => set("minOrder", e.target.value)} />
@@ -625,14 +655,15 @@ const NAV = [
 function AdminApp() {
   const { orders } = useApp();
   const [page, setPage] = useState("products");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pending = orders.filter(o => o.status === "pendiente").length;
 
-  return (
-    <div className="flex min-h-screen bg-[#0a0a0a] font-sans">
-      <aside className="w-[220px] bg-[#121212] border-r border-[#222] flex flex-col px-3 py-5 sticky top-0 h-screen shrink-0">
+  function SidebarContent() {
+    return (
+      <>
         <div className="px-2 mb-6">
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-[#d4a853] flex items-center justify-center text-sm">👟</div>
+            <div className="w-8 h-8 rounded-lg bg-[#d4a853] flex items-center justify-center text-sm shrink-0">👟</div>
             <div>
               <div className="text-sm font-extrabold text-[#e8e8e8] tracking-tight">Admin</div>
               <div className="text-[11px] text-[#888]">Calzado Mayorista</div>
@@ -646,7 +677,7 @@ function AdminApp() {
             return (
               <button
                 key={n.id}
-                onClick={() => setPage(n.id)}
+                onClick={() => { setPage(n.id); setSidebarOpen(false); }}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer text-left ${
                   page === n.id
                     ? "bg-[#d4a853]/10 text-[#d4a853]"
@@ -668,13 +699,64 @@ function AdminApp() {
         <a
           href="/#/"
           className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs text-[#555] hover:text-[#888] hover:bg-[#1a1a1a] transition-all duration-200 no-underline"
+          onClick={() => setSidebarOpen(false)}
         >
           <ExternalLink size={14} />
           Ver catálogo
         </a>
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] font-sans flex">
+      {/* Sidebar desktop */}
+      <aside className="hidden sm:flex w-[220px] bg-[#121212] border-r border-[#222] flex-col px-3 py-5 sticky top-0 h-screen shrink-0">
+        <SidebarContent />
       </aside>
 
-      <main className="flex-1 overflow-auto py-7 px-8">
+      {/* Sidebar mobile overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-[100] sm:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 250 }}
+              className="fixed top-0 left-0 bottom-0 w-[260px] bg-[#121212] z-[101] flex flex-col px-3 py-5 sm:hidden"
+            >
+              <SidebarContent />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      <main className="flex-1 overflow-auto py-5 px-4 sm:py-7 sm:px-8">
+        {/* Mobile header */}
+        <div className="flex items-center gap-3 mb-6 sm:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-xl bg-[#1a1a1a] text-[#888] hover:text-[#e8e8e8] transition-all cursor-pointer"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#d4a853] flex items-center justify-center text-sm shrink-0">👟</div>
+            <div>
+              <div className="text-sm font-extrabold text-[#e8e8e8] tracking-tight">Admin</div>
+              <div className="text-[11px] text-[#888]">Calzado Mayorista</div>
+            </div>
+          </div>
+        </div>
+
         {page === "products" && <ProductsSection />}
         {page === "orders"   && <OrdersSection />}
         {page === "settings" && <SettingsSection />}
@@ -702,11 +784,11 @@ export default function Admin() {
 
   if (!loggedIn) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center font-sans">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center font-sans px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#121212] rounded-2xl border border-[#222] p-8 w-[360px] shadow-2xl"
+          className="bg-[#121212] rounded-2xl border border-[#222] p-6 sm:p-8 w-full max-w-[380px] shadow-2xl"
         >
           <div className="text-center mb-8">
             <div className="w-14 h-14 rounded-2xl bg-[#d4a853]/20 flex items-center justify-center text-3xl mx-auto mb-4">
