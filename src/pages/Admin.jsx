@@ -1,106 +1,104 @@
-// src/pages/Admin.jsx
 import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Package, ShoppingCart, Settings, LogOut, ExternalLink, Plus, X, Trash2,
+  Check, Truck, AlertCircle, Search, Upload, Image as ImageIcon,
+} from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { formatPrice, ALL_SIZES_ADULTO, ALL_SIZES_NINO } from "../data/store";
 import { supabase } from "../config/supabase";
 
-// ─── UI atómica ────────────────────────────────────────────────────────────
-const STATUS_COLORS = {
-  pendiente:  { bg: "#FFF8E6", text: "#B07D00", border: "#FADA79" },
-  confirmado: { bg: "#E8F8EF", text: "#0F6E56", border: "#6DCCA0" },
-  enviado:    { bg: "#E6F0FF", text: "#1A4FAB", border: "#7AABF0" },
-  cancelado:  { bg: "#FEF0F0", text: "#A32D2D", border: "#F09595" },
-};
-
 function Badge({ status }) {
-  const s = STATUS_COLORS[status] || STATUS_COLORS.pendiente;
+  const styles = {
+    pendiente:  "bg-amber-500/10 text-amber-400 border-amber-500/30",
+    confirmado: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    enviado:    "bg-blue-500/10 text-blue-400 border-blue-500/30",
+    cancelado:  "bg-red-500/10 text-red-400 border-red-500/30",
+  };
   return (
-    <span style={{
-      background: s.bg, color: s.text, border: `1px solid ${s.border}`,
-      borderRadius: 20, fontSize: 11, fontWeight: 700,
-      padding: "3px 10px", textTransform: "capitalize",
-    }}>{status}</span>
+    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border capitalize ${styles[status] || styles.pendiente}`}>
+      {status}
+    </span>
   );
 }
 
-function Input({ label, ...props }) {
+function Input({ label, className = "", ...props }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      {label && <label style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</label>}
-      <input {...props} style={{
-        padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E8E8E8",
-        fontSize: 13, background: "#fff", color: "#1a1a1a", outline: "none",
-        transition: "border-color 0.15s", ...props.style,
-      }}
-        onFocus={e => e.target.style.borderColor = "#1a1a1a"}
-        onBlur={e => e.target.style.borderColor = "#E8E8E8"}
+    <div className="flex flex-col gap-1.5">
+      {label && <label className="text-[11px] font-bold text-[#888] uppercase tracking-[0.05em]">{label}</label>}
+      <input
+        {...props}
+        className={`w-full px-3 py-2.5 rounded-xl border border-[#333] bg-[#0a0a0a] text-[#e8e8e8] text-sm font-medium outline-none transition-colors duration-200 placeholder:text-[#555] focus:border-[#d4a853] ${className}`}
       />
     </div>
   );
 }
 
-function Select({ label, children, ...props }) {
+function Select({ label, children, className = "", ...props }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      {label && <label style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</label>}
-      <select {...props} style={{
-        padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E8E8E8",
-        fontSize: 13, background: "#fff", color: "#1a1a1a", outline: "none", cursor: "pointer",
-        ...props.style,
-      }}>{children}</select>
+    <div className="flex flex-col gap-1.5">
+      {label && <label className="text-[11px] font-bold text-[#888] uppercase tracking-[0.05em]">{label}</label>}
+      <select
+        {...props}
+        className="w-full px-3 py-2.5 rounded-xl border border-[#333] bg-[#0a0a0a] text-[#e8e8e8] text-sm font-medium outline-none cursor-pointer transition-colors focus:border-[#d4a853]"
+      >
+        {children}
+      </select>
     </div>
   );
 }
 
-function Btn({ children, variant = "primary", small, ...props }) {
+function Btn({ children, variant = "primary", small, className = "", ...props }) {
   const variants = {
-    primary: { background: "#1a1a1a", color: "#fff", border: "none" },
-    ghost:   { background: "transparent", border: "1.5px solid #E8E8E8", color: "#666" },
-    danger:  { background: "#FEF0F0", color: "#A32D2D", border: "1px solid #F09595" },
-    green:   { background: "#25D366", color: "#fff", border: "none" },
-    success: { background: "#E8F8EF", color: "#0F6E56", border: "1px solid #6DCCA0" },
+    primary: "bg-[#d4a853] text-[#0a0a0a] hover:bg-[#e8c97a]",
+    ghost:   "bg-transparent text-[#888] border border-[#333] hover:border-[#555] hover:text-[#e8e8e8]",
+    danger:  "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20",
+    green:   "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20",
+    success: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20",
   };
   return (
-    <button {...props} style={{
-      padding: small ? "6px 14px" : "10px 18px",
-      borderRadius: 8, fontSize: small ? 12 : 13, fontWeight: 700,
-      cursor: "pointer", transition: "opacity 0.15s",
-      display: "inline-flex", alignItems: "center", gap: 6,
-      ...variants[variant], ...props.style,
-    }}
-      onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
-      onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-    >{children}</button>
+    <button
+      {...props}
+      className={`${small ? "px-3 py-1.5 text-[12px]" : "px-5 py-2.5 text-sm"} rounded-xl font-bold transition-all duration-200 flex items-center gap-1.5 cursor-pointer active:scale-[0.97] ${variants[variant]} ${className}`}
+    >
+      {children}
+    </button>
   );
 }
 
 function Modal({ title, onClose, children, wide }) {
   return (
-    <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      zIndex: 200, padding: 20,
-    }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{
-        background: "#fff", borderRadius: 16, width: "100%",
-        maxWidth: wide ? 720 : 480, maxHeight: "90vh", overflowY: "auto",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-      }}>
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "18px 24px", borderBottom: "1px solid #F0F0F0",
-          position: "sticky", top: 0, background: "#fff", zIndex: 1,
-        }}>
-          <div style={{ fontSize: 15, fontWeight: 800 }}>{title}</div>
-          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999" }}>✕</button>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-5"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-[#121212] rounded-2xl w-full border border-[#222] shadow-2xl"
+        style={{ maxWidth: wide ? 720 : 480, maxHeight: "90vh" }}
+      >
+        <div className="overflow-y-auto max-h-[90vh]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#222] sticky top-0 bg-[#121212] z-10">
+            <h2 className="text-base font-extrabold text-[#e8e8e8]">{title}</h2>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-[#222] flex items-center justify-center text-[#888] hover:bg-[#333] hover:text-[#e8e8e8] transition-all cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="p-6">{children}</div>
         </div>
-        <div style={{ padding: "20px 24px" }}>{children}</div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
-// ─── Formulario producto ───────────────────────────────────────────────────
 function ProductForm({ product, onSave, onCancel }) {
   const isEdit = !!product?.id;
   const [form, setForm] = useState({
@@ -149,34 +147,42 @@ function ProductForm({ product, onSave, onCancel }) {
   const activeSizes = Object.keys(form.stock).map(Number).sort((a, b) => a - b);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      {/* Imagen */}
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        <div onClick={() => fileRef.current.click()} style={{
-          width: 100, height: 100, borderRadius: 12, border: "2px dashed #E8E8E8",
-          background: "#FAFAFA", display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer", overflow: "hidden", flexShrink: 0,
-          fontSize: imgPreview ? "initial" : 36,
-        }}>
-          {imgPreview
-            ? <img src={imgPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : form.emoji}
+    <div className="flex flex-col gap-5">
+      <div className="flex gap-4 items-start">
+        <div
+          onClick={() => fileRef.current.click()}
+          className="w-[100px] h-[100px] rounded-xl border-2 border-dashed border-[#333] bg-[#0a0a0a] flex items-center justify-center cursor-pointer overflow-hidden shrink-0 hover:border-[#d4a853] transition-colors duration-200"
+        >
+          {imgPreview ? (
+            <img src={imgPreview} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-3xl">{form.emoji}</span>
+          )}
         </div>
-        <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImage} />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-          <Btn small variant="ghost" onClick={() => fileRef.current.click()}>📎 Subir foto</Btn>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+        <div className="flex-1 flex flex-col gap-3">
+          <Btn small variant="ghost" onClick={() => fileRef.current.click()}>
+            <Upload size={14} /> Subir foto
+          </Btn>
+          <div className="flex gap-1.5 flex-wrap">
             {["👟", "👠", "👡", "👞", "🥿", "⚡", "🎨"].map(e => (
-              <button key={e} onClick={() => set("emoji", e)} style={{
-                fontSize: 18, border: form.emoji === e ? "2px solid #1a1a1a" : "1px solid #E8E8E8",
-                borderRadius: 8, padding: "4px 8px", cursor: "pointer", background: "#fff",
-              }}>{e}</button>
+              <button
+                key={e}
+                onClick={() => set("emoji", e)}
+                className={`text-lg rounded-lg px-2 py-1 cursor-pointer transition-all ${
+                  form.emoji === e
+                    ? "bg-[#d4a853] text-[#0a0a0a]"
+                    : "bg-[#1a1a1a] text-[#888] border border-[#333] hover:border-[#555]"
+                }`}
+              >
+                {e}
+              </button>
             ))}
           </div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className="grid grid-cols-2 gap-3">
         <Input label="Nombre *" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Runner Pro" />
         <Input label="Marca *" value={form.brand} onChange={e => set("brand", e.target.value)} placeholder="Nike" />
         <Input label="Precio *" type="number" value={form.price} onChange={e => set("price", e.target.value)} placeholder="12500" />
@@ -185,53 +191,59 @@ function ProductForm({ product, onSave, onCancel }) {
           <option value="nino">Niños</option>
         </Select>
         <Input label="Tag (etiqueta)" value={form.tag} onChange={e => set("tag", e.target.value)} placeholder="Nuevo, Oferta…" />
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.05em", textTransform: "uppercase" }}>Estado</label>
-          <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-bold text-[#888] uppercase tracking-[0.05em]">Estado</label>
+          <div className="flex gap-2 mt-0.5">
             {[true, false].map(v => (
-              <button key={String(v)} onClick={() => set("active", v)} style={{
-                flex: 1, padding: "9px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600,
-                border: form.active === v ? "1.5px solid #1a1a1a" : "1.5px solid #E8E8E8",
-                background: form.active === v ? "#1a1a1a" : "#fff",
-                color: form.active === v ? "#fff" : "#666",
-              }}>{v ? "✓ Activo" : "✗ Oculto"}</button>
+              <button
+                key={String(v)}
+                onClick={() => set("active", v)}
+                className={`flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-all ${
+                  form.active === v
+                    ? "bg-[#d4a853] text-[#0a0a0a]"
+                    : "bg-[#1a1a1a] text-[#888] border border-[#333] hover:border-[#555]"
+                }`}
+              >
+                {v ? "✓ Activo" : "✗ Oculto"}
+              </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Talles y stock */}
       <div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 10 }}>
+        <label className="text-[11px] font-bold text-[#888] uppercase tracking-[0.05em] block mb-2.5">
           Talles y stock
-        </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+        </label>
+        <div className="flex gap-1.5 flex-wrap mb-3">
           {sizePool.map(s => (
-            <button key={s} onClick={() => toggleSize(s)} style={{
-              padding: "4px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer",
-              border: s in form.stock ? "1.5px solid #1D9E75" : "1px solid #E8E8E8",
-              background: s in form.stock ? "#E8F8EF" : "#fff",
-              color: s in form.stock ? "#0F6E56" : "#666",
-              fontWeight: s in form.stock ? 700 : 400,
-            }}>{s}</button>
+            <button
+              key={s}
+              onClick={() => toggleSize(s)}
+              className={`px-2.5 py-1 rounded-lg text-xs cursor-pointer transition-all ${
+                s in form.stock
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold"
+                  : "bg-[#1a1a1a] text-[#555] border border-[#333] hover:border-[#555]"
+              }`}
+            >
+              {s}
+            </button>
           ))}
         </div>
         {activeSizes.length > 0 && (
-          <div style={{ background: "#FAFAFA", borderRadius: 10, padding: "12px 14px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: 8 }}>
+          <div className="bg-[#0a0a0a] rounded-xl p-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-2">
               {activeSizes.map(s => (
-                <div key={s} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 11, color: "#888", fontWeight: 700, textAlign: "center" }}>T.{s}</label>
+                <div key={s} className="flex flex-col gap-1">
+                  <label className="text-[11px] text-[#888] font-bold text-center">T.{s}</label>
                   <input
                     type="number" min="0" value={form.stock[s]}
                     onChange={e => setStock(s, e.target.value)}
-                    style={{
-                      padding: "6px 8px", borderRadius: 6, border: "1.5px solid",
-                      borderColor: form.stock[s] === 0 ? "#F09595" : "#E8E8E8",
-                      fontSize: 13, textAlign: "center",
-                      color: form.stock[s] === 0 ? "#E24B4A" : "#1a1a1a",
-                      background: "#fff", outline: "none",
-                    }}
+                    className={`w-full px-2 py-1.5 rounded-lg border text-sm text-center outline-none bg-[#1a1a1a] ${
+                      form.stock[s] === 0
+                        ? "border-red-500/30 text-red-400"
+                        : "border-[#333] text-[#e8e8e8]"
+                    }`}
                   />
                 </div>
               ))}
@@ -240,7 +252,7 @@ function ProductForm({ product, onSave, onCancel }) {
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 8, borderTop: "1px solid #F0F0F0" }}>
+      <div className="flex gap-2 justify-end pt-3 border-t border-[#222]">
         <Btn variant="ghost" onClick={onCancel}>Cancelar</Btn>
         <Btn onClick={handleSubmit}>{isEdit ? "Guardar cambios" : "Crear producto"}</Btn>
       </div>
@@ -248,7 +260,6 @@ function ProductForm({ product, onSave, onCancel }) {
   );
 }
 
-// ─── Sección Productos (Conectada a Supabase) ──────────────────────────────
 function ProductsSection() {
   const { products, setProducts } = useApp();
   const [modal, setModal] = useState(null);
@@ -310,107 +321,131 @@ function ProductsSection() {
 
   const sizes = (p) => Object.keys(p.stock || {}).map(Number).sort((a, b) => a - b);
   const totalStock = (p) => Object.values(p.stock || {}).reduce((s, v) => s + v, 0);
+  const activeCount = products.filter(p => p.active).length;
+  const zeroStock = products.reduce((s, p) => s + Object.values(p.stock || {}).filter(v => v === 0).length, 0);
+  const adultCount = products.filter(p => p.cat === "adulto").length;
+  const ninoCount = products.filter(p => p.cat === "nino").length;
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <div style={{ fontSize: 18, fontWeight: 800 }}>Productos</div>
-          <div style={{ fontSize: 12, color: "#999" }}>{products.length} cargados en base de datos</div>
+          <h2 className="text-lg font-extrabold text-[#e8e8e8]">Productos</h2>
+          <p className="text-xs text-[#888]">{products.length} cargados en base de datos</p>
         </div>
-        <Btn onClick={() => setModal("new")}>+ Nuevo producto</Btn>
+        <Btn onClick={() => setModal("new")}>
+          <Plus size={16} /> Nuevo producto
+        </Btn>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 }}>
+      <div className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Total", val: products.length, icon: "📦" },
-          { label: "Activos", val: products.filter(p => p.active).length, icon: "✅" },
-          { label: "Talles sin stock", val: products.reduce((s, p) => s + Object.values(p.stock || {}).filter(v => v === 0).length, 0), icon: "⚠️" },
-          { label: "Adult / Niño", val: `${products.filter(p => p.cat === "adulto").length} / ${products.filter(p => p.cat === "nino").length}`, icon: "👥" },
+          { label: "Total", val: products.length, icon: <Package size={18} />, color: "text-[#d4a853]" },
+          { label: "Activos", val: activeCount, icon: <Check size={18} />, color: "text-emerald-400" },
+          { label: "Stock 0", val: zeroStock, icon: <AlertCircle size={18} />, color: "text-red-400" },
+          { label: "Adulto / Niño", val: `${adultCount} / ${ninoCount}`, icon: <ImageIcon size={18} />, color: "text-blue-400" },
         ].map(s => (
-          <div key={s.label} style={{ background: "#fff", border: "1px solid #F0F0F0", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ fontSize: 22, marginBottom: 4 }}>{s.icon}</div>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>{s.val}</div>
-            <div style={{ fontSize: 11, color: "#999" }}>{s.label}</div>
+          <div key={s.label} className="bg-[#121212] rounded-xl border border-[#222] p-4">
+            <div className={`${s.color} mb-1`}>{s.icon}</div>
+            <div className="text-xl font-extrabold text-[#e8e8e8]">{s.val}</div>
+            <div className="text-[11px] text-[#888]">{s.label}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid #F0F0F0", borderRadius: 14, overflow: "hidden" }}>
+      <div className="bg-[#121212] rounded-2xl border border-[#222] overflow-hidden">
         {products.length === 0 ? (
-          <div style={{ padding: "3rem", textAlign: "center", color: "#AAA" }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>📦</div>
-            <div style={{ fontSize: 14 }}>No hay productos aún. ¡Creá el primero!</div>
+          <div className="py-16 text-center text-[#555]">
+            <Package size={40} className="mx-auto mb-3 opacity-50" />
+            <p className="text-sm">No hay productos aún. ¡Creá el primero!</p>
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#FAFAFA" }}>
-                {["Producto", "Categoría", "Precio", "Talles / Stock", "Estado", ""].map(h => (
-                  <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.05em", borderBottom: "1px solid #F0F0F0" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p, i) => (
-                <tr key={p.id} style={{ borderBottom: i < products.length - 1 ? "1px solid #F8F8F8" : "none" }}>
-                  <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", background: "#F8F8F8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
-                        {p.image ? <img src={p.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : p.emoji}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700 }}>{p.name}</div>
-                        <div style={{ fontSize: 11, color: "#999" }}>{p.brand}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "#666" }}>{p.cat === "adulto" ? "👟 Adulto" : "🧒 Niño"}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700 }}>{formatPrice(p.price)}</td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {sizes(p).map(s => (
-                        <span key={s} style={{
-                          fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700,
-                          background: p.stock[s] === 0 ? "#FEF0F0" : "#E8F8EF",
-                          color: p.stock[s] === 0 ? "#A32D2D" : "#0F6E56",
-                          border: `1px solid ${p.stock[s] === 0 ? "#F09595" : "#6DCCA0"}`,
-                        }}>{s}: {p.stock[s]}</span>
-                      ))}
-                    </div>
-                    <div style={{ fontSize: 10, color: "#AAA", marginTop: 2 }}>{totalStock(p)} pares totales</div>
-                  </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <button onClick={() => toggleActive(p)} style={{
-                      fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, cursor: "pointer",
-                      border: `1px solid ${p.active ? "#6DCCA0" : "#E8E8E8"}`,
-                      background: p.active ? "#E8F8EF" : "#F8F8F8",
-                      color: p.active ? "#0F6E56" : "#AAA",
-                    }}>{p.active ? "● Activo" : "○ Oculto"}</button>
-                  </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <Btn small variant="ghost" onClick={() => setModal(p)}>Editar</Btn>
-                      <Btn small variant="danger" onClick={() => deleteProduct(p.id)}>🗑</Btn>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-[#0a0a0a]">
+                  {["Producto", "Categoría", "Precio", "Talles / Stock", "Estado", ""].map(h => (
+                    <th key={h} className="text-left px-4 py-3 text-[11px] font-bold text-[#888] uppercase tracking-[0.05em] border-b border-[#222]">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {products.map((p, i) => (
+                  <tr key={p.id} className="border-b border-[#1a1a1a] last:border-0 hover:bg-[#0a0a0a]/50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] flex items-center justify-center text-lg overflow-hidden">
+                          {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : p.emoji}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-[#e8e8e8]">{p.name}</div>
+                          <div className="text-[11px] text-[#888]">{p.brand}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[#888]">{p.cat === "adulto" ? "👟 Adulto" : "🧒 Niño"}</td>
+                    <td className="px-4 py-3 text-sm font-bold text-[#d4a853]">{formatPrice(p.price)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1 flex-wrap max-w-[200px]">
+                        {sizes(p).map(s => (
+                          <span
+                            key={s}
+                            className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                              p.stock[s] === 0
+                                ? "bg-red-500/10 text-red-400"
+                                : "bg-emerald-500/10 text-emerald-400"
+                            }`}
+                          >
+                            {s}: {p.stock[s]}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="text-[10px] text-[#555] mt-0.5">{totalStock(p)} pares</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => toggleActive(p)}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full cursor-pointer transition-all ${
+                          p.active
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                            : "bg-[#1a1a1a] text-[#555] border border-[#333]"
+                        }`}
+                      >
+                        {p.active ? "● Activo" : "○ Oculto"}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1.5">
+                        <Btn small variant="ghost" onClick={() => setModal(p)}>Editar</Btn>
+                        <button
+                          onClick={() => deleteProduct(p.id)}
+                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      {modal && (
-        <Modal title={modal === "new" ? "Nuevo producto" : `Editar: ${modal.name}`} onClose={() => setModal(null)} wide>
-          <ProductForm product={modal === "new" ? null : modal} onSave={saveProduct} onCancel={() => setModal(null)} />
-        </Modal>
-      )}
+      <AnimatePresence>
+        {modal && (
+          <Modal title={modal === "new" ? "Nuevo producto" : `Editar: ${modal.name}`} onClose={() => setModal(null)} wide>
+            <ProductForm product={modal === "new" ? null : modal} onSave={saveProduct} onCancel={() => setModal(null)} />
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// ─── Sección Pedidos ──────────────────────────────────────────────────────
 function OrdersSection() {
   const { orders, setOrders } = useApp();
   const [filter, setFilter] = useState("todos");
@@ -436,67 +471,89 @@ function OrdersSection() {
 
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 18, fontWeight: 800 }}>Pedidos</div>
-        <div style={{ fontSize: 12, color: "#999" }}>{orders.length} pedidos en total · Los pedidos se guardan en memoria por sesión</div>
+      <div className="mb-5">
+        <h2 className="text-lg font-extrabold text-[#e8e8e8]">Pedidos</h2>
+        <p className="text-xs text-[#888]">{orders.length} pedidos en total · Los pedidos se guardan en memoria por sesión</p>
       </div>
 
-      <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
+      <div className="flex gap-2 mb-4 flex-wrap">
         {Object.entries(counts).map(([k, v]) => (
-          <button key={k} onClick={() => setFilter(k)} style={{
-            padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
-            border: filter === k ? "1.5px solid #1a1a1a" : "1px solid #E8E8E8",
-            background: filter === k ? "#1a1a1a" : "#fff",
-            color: filter === k ? "#fff" : "#666",
-          }}>{k.charAt(0).toUpperCase() + k.slice(1)} ({v})</button>
+          <button
+            key={k}
+            onClick={() => setFilter(k)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all ${
+              filter === k
+                ? "bg-[#d4a853] text-[#0a0a0a]"
+                : "bg-[#1a1a1a] text-[#888] border border-[#333] hover:border-[#555]"
+            }`}
+          >
+            {k.charAt(0).toUpperCase() + k.slice(1)} ({v})
+          </button>
         ))}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="space-y-3">
         {filtered.length === 0 && (
-          <div style={{ textAlign: "center", padding: "3rem", color: "#AAA", fontSize: 14 }}>
+          <div className="text-center py-16 text-[#555] text-sm">
             {orders.length === 0
               ? "Los pedidos aparecerán acá cuando los clientes completen su compra"
               : "No hay pedidos en esta categoría"}
           </div>
         )}
         {filtered.map(order => (
-          <div key={order.id} style={{ background: "#fff", border: "1px solid #F0F0F0", borderRadius: 14, padding: "16px 18px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+          <motion.div
+            key={order.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[#121212] rounded-xl border border-[#222] p-5"
+          >
+            <div className="flex justify-between items-start mb-3">
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                  <span style={{ fontSize: 14, fontWeight: 800 }}>{order.client}</span>
+                <div className="flex items-center gap-2.5 mb-0.5">
+                  <span className="text-base font-extrabold text-[#e8e8e8]">{order.client}</span>
                   <Badge status={order.status} />
                 </div>
-                <div style={{ fontSize: 11, color: "#AAA" }}>Pedido #{order.id} · {order.date}</div>
+                <div className="text-[11px] text-[#888]">Pedido #{order.id} · {order.date}</div>
               </div>
-              <div style={{ fontSize: 17, fontWeight: 800 }}>{formatPrice(order.total)}</div>
+              <div className="text-lg font-extrabold text-[#d4a853]">{formatPrice(order.total)}</div>
             </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+            <div className="flex gap-1.5 flex-wrap mb-3">
               {order.items.map((item, i) => (
-                <span key={i} style={{
-                  fontSize: 11, padding: "3px 8px", borderRadius: 6,
-                  background: "#F8F8F8", color: "#555", border: "1px solid #EEE",
-                }}>{item.name} t.{item.size} ×{item.qty}</span>
+                <span
+                  key={i}
+                  className="text-[11px] px-2 py-1 rounded-lg bg-[#1a1a1a] text-[#888] border border-[#333]"
+                >
+                  {item.name} t.{item.size} ×{item.qty}
+                </span>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <div className="flex gap-1.5 flex-wrap">
               <Btn small variant="green" onClick={() => sendWA(order)}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-                Confirmar por WA
+                <Check size={13} /> Confirmar por WA
               </Btn>
-              {order.status === "pendiente"  && <Btn small variant="success" onClick={() => setStatus(order.id, "confirmado")}>✓ Confirmar</Btn>}
-              {order.status === "confirmado" && <Btn small variant="ghost"   onClick={() => setStatus(order.id, "enviado")}>🚚 Marcar enviado</Btn>}
-              {order.status !== "cancelado"  && <Btn small variant="danger"  onClick={() => setStatus(order.id, "cancelado")}>Cancelar</Btn>}
+              {order.status === "pendiente" && (
+                <Btn small variant="success" onClick={() => setStatus(order.id, "confirmado")}>
+                  ✓ Confirmar
+                </Btn>
+              )}
+              {order.status === "confirmado" && (
+                <Btn small variant="ghost" onClick={() => setStatus(order.id, "enviado")}>
+                  <Truck size={13} /> Marcar enviado
+                </Btn>
+              )}
+              {order.status !== "cancelado" && (
+                <Btn small variant="danger" onClick={() => setStatus(order.id, "cancelado")}>
+                  Cancelar
+                </Btn>
+              )}
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>
   );
 }
 
-// ─── Sección Configuración ────────────────────────────────────────────────
 function SettingsSection() {
   const [cfg, setCfg] = useState({
     shopName: "Calzado Mayorista", phone: "5491155667788",
@@ -507,19 +564,17 @@ function SettingsSection() {
   const set = (k, v) => setCfg(c => ({ ...c, [k]: v }));
 
   function handleSave() {
-    // En el MVP esto solo muestra confirmación visual.
-    // Para persistir: guardarlo en Supabase o localStorage.
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
 
   return (
     <div>
-      <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 20 }}>Configuración</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ background: "#fff", border: "1px solid #F0F0F0", borderRadius: 14, padding: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 14 }}>🏪 Datos del negocio</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <h2 className="text-lg font-extrabold text-[#e8e8e8] mb-5">Configuración</h2>
+      <div className="flex flex-col gap-4">
+        <div className="bg-[#121212] rounded-xl border border-[#222] p-6">
+          <h3 className="text-sm font-extrabold text-[#e8e8e8] mb-4">🏪 Datos del negocio</h3>
+          <div className="grid grid-cols-2 gap-3">
             <Input label="Nombre" value={cfg.shopName} onChange={e => set("shopName", e.target.value)} />
             <Input label="Teléfono WhatsApp" value={cfg.phone} onChange={e => set("phone", e.target.value)} placeholder="5491155667788" />
             <Input label="Pedido mínimo (pares)" type="number" value={cfg.minOrder} onChange={e => set("minOrder", e.target.value)} />
@@ -529,25 +584,31 @@ function SettingsSection() {
               <option value="BRL">BRL – Real</option>
             </Select>
           </div>
-          <div style={{ marginTop: 12, padding: "10px 14px", background: "#FFFBEA", borderRadius: 8, fontSize: 12, color: "#B07D00", border: "1px solid #FADA79" }}>
-            ⚠️ Para que el teléfono de WhatsApp cambie en el catálogo, editá también <code>SELLER_PHONE</code> en <code>src/data/store.js</code>
+          <div className="mt-3 px-4 py-2.5 rounded-xl bg-amber-500/10 text-amber-400 text-xs border border-amber-500/20">
+            ⚠️ Para que el teléfono de WhatsApp cambie en el catálogo, editá también <code className="text-[#e8e8e8]">SELLER_PHONE</code> en <code className="text-[#e8e8e8]">src/data/store.js</code>
           </div>
         </div>
-        <div style={{ background: "#fff", border: "1px solid #F0F0F0", borderRadius: 14, padding: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 14 }}><span style={{ color: "#25D366" }}>●</span> Mensajes WhatsApp</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.05em", textTransform: "uppercase" }}>Mensaje de bienvenida</label>
-              <textarea value={cfg.welcomeMsg} onChange={e => set("welcomeMsg", e.target.value)} rows={3}
-                style={{ padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E8E8E8", fontSize: 13, resize: "vertical", fontFamily: "inherit", outline: "none" }} />
+
+        <div className="bg-[#121212] rounded-xl border border-[#222] p-6">
+          <h3 className="text-sm font-extrabold text-[#e8e8e8] mb-4"><span className="text-emerald-400">●</span> Mensajes WhatsApp</h3>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-[#888] uppercase tracking-[0.05em]">Mensaje de bienvenida</label>
+              <textarea
+                value={cfg.welcomeMsg}
+                onChange={e => set("welcomeMsg", e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2.5 rounded-xl border border-[#333] bg-[#0a0a0a] text-[#e8e8e8] text-sm outline-none transition-colors focus:border-[#d4a853] resize-vertical placeholder:text-[#555]"
+              />
             </div>
-            <div style={{ background: "#F0FFF8", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#0F6E56" }}>
+            <div className="px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs border border-emerald-500/20">
               <strong>Preview:</strong> "{cfg.welcomeMsg}"
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12 }}>
-          {saved && <span style={{ fontSize: 13, color: "#0F6E56", fontWeight: 600 }}>✓ Guardado</span>}
+
+        <div className="flex justify-end items-center gap-3">
+          {saved && <span className="text-sm text-emerald-400 font-semibold">✓ Guardado</span>}
           <Btn onClick={handleSave}>Guardar cambios</Btn>
         </div>
       </div>
@@ -555,11 +616,10 @@ function SettingsSection() {
   );
 }
 
-// ─── Admin principal ──────────────────────────────────────────────────────
 const NAV = [
-  { id: "products", label: "Productos", icon: "📦" },
-  { id: "orders",   label: "Pedidos",   icon: "🛒" },
-  { id: "settings", label: "Config",    icon: "⚙️" },
+  { id: "products", label: "Productos", icon: Package },
+  { id: "orders",   label: "Pedidos",   icon: ShoppingCart },
+  { id: "settings", label: "Config",    icon: Package },
 ];
 
 function AdminApp() {
@@ -568,57 +628,63 @@ function AdminApp() {
   const pending = orders.filter(o => o.status === "pendiente").length;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "system-ui, sans-serif", background: "#F7F7F7" }}>
-      {/* Sidebar */}
-      <div style={{
-        width: 210, background: "#fff", borderRight: "1px solid #F0F0F0",
-        display: "flex", flexDirection: "column", padding: "20px 12px",
-        position: "sticky", top: 0, height: "100vh",
-      }}>
-        <div style={{ padding: "0 8px", marginBottom: 24 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: "-0.02em" }}>👟 Admin</div>
-          <div style={{ fontSize: 11, color: "#AAA" }}>Calzado Mayorista</div>
+    <div className="flex min-h-screen bg-[#0a0a0a] font-sans">
+      <aside className="w-[220px] bg-[#121212] border-r border-[#222] flex flex-col px-3 py-5 sticky top-0 h-screen shrink-0">
+        <div className="px-2 mb-6">
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="w-8 h-8 rounded-lg bg-[#d4a853] flex items-center justify-center text-sm">👟</div>
+            <div>
+              <div className="text-sm font-extrabold text-[#e8e8e8] tracking-tight">Admin</div>
+              <div className="text-[11px] text-[#888]">Calzado Mayorista</div>
+            </div>
+          </div>
         </div>
-        <nav style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-          {NAV.map(n => (
-            <button key={n.id} onClick={() => setPage(n.id)} style={{
-              display: "flex", alignItems: "center", gap: 10, padding: "9px 12px",
-              borderRadius: 10, border: "none", cursor: "pointer", textAlign: "left",
-              background: page === n.id ? "#1a1a1a" : "transparent",
-              color: page === n.id ? "#fff" : "#555",
-              fontSize: 13, fontWeight: page === n.id ? 700 : 400,
-              transition: "all 0.15s",
-            }}>
-              <span style={{ fontSize: 16 }}>{n.icon}</span>
-              {n.label}
-              {n.id === "orders" && pending > 0 && (
-                <span style={{ marginLeft: "auto", background: "#E24B4A", color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 20, padding: "1px 7px" }}>{pending}</span>
-              )}
-            </button>
-          ))}
-        </nav>
-        {/* FIX: HashRouter usa /#/ para navegar */}
-        <a href="/#/" style={{
-          display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
-          borderRadius: 8, color: "#AAA", fontSize: 12, textDecoration: "none",
-        }}>🌐 Ver catálogo</a>
-      </div>
 
-      {/* Contenido */}
-      <div style={{ flex: 1, padding: "28px 32px", overflowY: "auto" }}>
+        <nav className="flex flex-col gap-1 flex-1">
+          {NAV.map(n => {
+            const Icon = n.icon;
+            return (
+              <button
+                key={n.id}
+                onClick={() => setPage(n.id)}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer text-left ${
+                  page === n.id
+                    ? "bg-[#d4a853]/10 text-[#d4a853]"
+                    : "text-[#888] hover:bg-[#1a1a1a] hover:text-[#e8e8e8]"
+                }`}
+              >
+                <Icon size={16} />
+                <span>{n.label}</span>
+                {n.id === "orders" && pending > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                    {pending}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        <a
+          href="/#/"
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs text-[#555] hover:text-[#888] hover:bg-[#1a1a1a] transition-all duration-200 no-underline"
+        >
+          <ExternalLink size={14} />
+          Ver catálogo
+        </a>
+      </aside>
+
+      <main className="flex-1 overflow-auto py-7 px-8">
         {page === "products" && <ProductsSection />}
         {page === "orders"   && <OrdersSection />}
         {page === "settings" && <SettingsSection />}
-      </div>
+      </main>
     </div>
   );
 }
 
-// ─── Login ────────────────────────────────────────────────────────────────
-// ⚠️  ANTES DE LANZAR: cambiá las credenciales hardcodeadas aquí
-//     o mejor: implementá autenticación real con Supabase Auth
 const ADMIN_USER = "admin";
-const ADMIN_PASS = "calzado2025"; // ← cambiá esto
+const ADMIN_PASS = "calzado2025";
 
 export default function Admin() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -634,30 +700,62 @@ export default function Admin() {
     }
   }
 
-  if (!loggedIn) return (
-    <div style={{
-      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-      background: "#F4F4F4", fontFamily: "system-ui, sans-serif",
-    }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: 32, width: 340, boxShadow: "0 4px 40px rgba(0,0,0,0.1)" }}>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontSize: 38, marginBottom: 8 }}>👟</div>
-          <div style={{ fontSize: 17, fontWeight: 800 }}>Panel Admin</div>
-          <div style={{ fontSize: 12, color: "#AAA" }}>Calzado Mayorista</div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Input label="Usuario" value={form.user} onChange={e => setForm(f => ({ ...f, user: e.target.value }))} placeholder="Usuario" />
-          <Input label="Contraseña" type="password" value={form.pass}
-            onChange={e => setForm(f => ({ ...f, pass: e.target.value }))}
-            onKeyDown={e => e.key === "Enter" && handleLogin()}
-            placeholder="••••••••"
-          />
-          {error && <div style={{ fontSize: 12, color: "#A32D2D", textAlign: "center" }}>Usuario o contraseña incorrectos</div>}
-          <Btn style={{ width: "100%", justifyContent: "center", marginTop: 4 }} onClick={handleLogin}>Ingresar →</Btn>
-        </div>
+  if (!loggedIn) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center font-sans">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-[#121212] rounded-2xl border border-[#222] p-8 w-[360px] shadow-2xl"
+        >
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-[#d4a853]/20 flex items-center justify-center text-3xl mx-auto mb-4">
+              👟
+            </div>
+            <h1 className="text-lg font-extrabold text-[#e8e8e8]">Panel Admin</h1>
+            <p className="text-xs text-[#888] mt-1">Calzado Mayorista</p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Input
+              label="Usuario"
+              value={form.user}
+              onChange={e => setForm(f => ({ ...f, user: e.target.value }))}
+              placeholder="Usuario"
+            />
+            <Input
+              label="Contraseña"
+              type="password"
+              value={form.pass}
+              onChange={e => setForm(f => ({ ...f, pass: e.target.value }))}
+              onKeyDown={e => e.key === "Enter" && handleLogin()}
+              placeholder="••••••••"
+            />
+
+            <AnimatePresence>
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="text-xs text-red-400 text-center"
+                >
+                  Usuario o contraseña incorrectos
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            <button
+              onClick={handleLogin}
+              className="w-full py-3 rounded-xl bg-[#d4a853] text-[#0a0a0a] font-bold text-sm hover:bg-[#e8c97a] transition-all duration-200 cursor-pointer active:scale-[0.98] mt-1"
+            >
+              Ingresar →
+            </button>
+          </div>
+        </motion.div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return <AdminApp />;
 }

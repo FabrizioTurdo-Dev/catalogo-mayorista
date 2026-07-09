@@ -1,7 +1,7 @@
 // src/data/store.js
-// Estado compartido. Los productos reales vienen de Supabase.
-// INITIAL_PRODUCTS solo se usa como fallback si Supabase falla.
+// Estado compartido. Ahora usa datos mock locales.
 
+export { default as MOCK_PRODUCTS } from "./mockProducts";
 export const INITIAL_PRODUCTS = [];
 export const INITIAL_ORDERS   = [];
 
